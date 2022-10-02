@@ -3,3 +3,6 @@
 /.idea/misc.xml
 /.idea/modules.xml
 /.idea/vcs.xml
+/quarkus-keycloak-demo/.mvn/wrapper/.gitignore
+/quarkus-keycloak-demo/.mvn/wrapper/maven-wrapper.properties
+/quarkus-keycloak-demo/.mvn/wrapper/MavenWrapperDownloader.java
