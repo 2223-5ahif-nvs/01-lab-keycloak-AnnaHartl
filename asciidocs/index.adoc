@@ -14,8 +14,122 @@ ifdef::backend-html5[]
 // print the toc here (not at the default position)
 //toc::[]
 
-== Header 1
+== Was ist Keycloak
+
+Ein open source Software Produkt das die Authentifizierung von Usern für Applikationen übernimmt
+
+SSO - Sigle Sign On
+
+Alternativen:
+
+== Yml File für docker-compose
+
+----
+version: "3.9"
+services:
+  postgres:
+    container_name: postgres_blog
+    image: "postgres:14.5"
+    volumes:
+      - ./db-data:/var/lib/postgresql/data/
+      - ./sql:/docker-entrypoint-initdb.d/:ro
+    env_file:
+      - ./database.dev.env
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+  pgadmin:
+    container_name: pgadmin_blog
+    image: "dpage/pgadmin4:5.1"
+    env_file:
+      - ./database.dev.env
+    ports:
+      - "5050:80"
+    networks:
+      - backend
+  keycloak:
+    container_name: keycloak_blog
+    image: "quay.io/keycloak/keycloak:19.0.2"
+    env_file:
+      - ./keycloak.dev.env
+    depends_on:
+      - "postgres"
+    ports:
+      - "8180:8080"
+      - "8787:8787" # debug port
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: backend
+    driver: bridge
+
+----
+
+== Quarkus mit Keycloak
+
+Es gibt in den Dev Services einen Keycloak integriert.
+
+=== Keycloak erstellen
+
+----
+ docker run --name keycloak -p 8080:8080 -e KEYCLOAK_ADMIN=admin -e KEYCLOAK_ADMIN_PASSWORD=admin quay.io/keycloak/keycloak:19.0.2 start-dev
+----
+Alter Keycloak
+image:keycloak-alt.png[]
+
+Version 19.0.2
+
+image::keycloak-version19.png[]
 
 
-=== Header 2
+=== Schritt 3
+Quarkus zu einem java Programm kompilieren und starten
 
+----
+./mvnw install
+----
+
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+=== Schritt 4
+Token vom Keycloak anfordern für User anna mit passwort test
+----
+export access_token=$(\
+    curl --insecure -X POST http://localhost:8080/realms/quarkus/protocol/openid-connect/token \
+    --user backend-service:secret \
+    -H 'content-type: application/x-www-form-urlencoded' \
+    -d 'username=alice&password=alice&grant_type=password' | jq --raw-output '.access_token' \
+ )
+----
+
+----
+echo $access_token
+----
+
+=== Schritt 5
+
+Ausprobieren
+
+----
+curl -v -X GET \
+http://localhost:8090/api/users/me \
+-H "Authorization: Bearer "$access_token
+----
+
+Funktioniert nicht!
+
+=== Quellen
+
+https://www.youtube.com/watch?v=PfQV2MC04NQ[Deutsches Tutorial]
+
+https://hub.docker.com/r/jboss/keycloak/[Docker Image]
+
+https://gauthier-cassany.com/posts/setup-keycloak-docker[Postgres + Docker + Keycloak]
+
+
+https://quarkus.io/guides/security-keycloak-authorization[Quarkus doku]
